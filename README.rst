@@ -65,3 +65,18 @@ For new Linux distributions, replace it with `pipx`.
 To uninstall: ::
 
     pip uninstall swugenerator
+
+Hacking
+=======
+
+To install a development variant of ``swugenerator`` into a virtual environment, follow these steps:
+
+1. `python3 -m venv .venv`
+2. `source .venv/bin/activate`
+3. `pip install -e .[dev]`
+
+The following dependencies are needed on your system:
+
+1. `python3`
+2. `python3-dev`
+3. `libarchive-dev`

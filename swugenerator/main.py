@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import libconf
+import json
 
 from swugenerator import __about__, generator
 from swugenerator.swu_sign import SWUSignCMS, SWUSignCustom, SWUSignPKCS11, SWUSignRSA
@@ -81,12 +82,21 @@ def parse_config_file(config_file_arg: str) -> dict:
     """
     config_vars = {}
     with open(config_file_arg, "r", encoding="utf-8") as config_fd:
-        config = libconf.load(config_fd)
-        for key, keydict in config.items():
-            if key == "variables":
-                for varname, varvalue in keydict.items():
-                    logging.debug("VAR = %s VAL = %s", varname, varvalue)
-                    config_vars[varname] = varvalue
+        if config_file_arg.endswith(".json"):
+            try:
+                config = json.load(config_fd)
+                for key, value in config.get("variables", {}).items():
+                    logging.debug("VAR = %s VAL = %s", key, value)
+                    config_vars[key] = value
+            except json.JSONDecodeError as error:
+                raise InvalidKeyFile(f"Failed to parse JSON config file {config_file_arg}") from error
+        else:
+            config = libconf.load(config_fd)
+            for key, keydict in config.items():
+                if key == "variables":
+                    for varname, varvalue in keydict.items():
+                        logging.debug("VAR = %s VAL = %s", varname, varvalue)
+                        config_vars[varname] = varvalue
     return config_vars
 
 

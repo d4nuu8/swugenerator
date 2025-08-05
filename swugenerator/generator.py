@@ -11,6 +11,7 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 
+import json
 import libconf
 
 from swugenerator.swu_file import SWUFile
@@ -40,7 +41,7 @@ class SWUGenerator:
         self.cpiofile = SWUFile(self.out)
         self.vars = confvars
         self.lines = []
-        self.conf = libconf.AttrDict()
+        self.conf = {}
         self.filelist = []
         self.temp = TemporaryDirectory()
         self.signtool = crypt
@@ -216,7 +217,7 @@ class SWUGenerator:
 
     def find_files_in_swdesc(self, first):
         for n, val in first.items():
-            if isinstance(val, libconf.AttrDict):
+            if isinstance(val, dict):
                 self.find_files_in_swdesc(val)
             elif isinstance(val, tuple):
                 for t in val:
@@ -238,8 +239,11 @@ class SWUGenerator:
         swdesc = ""
         for line in self.lines:
             swdesc = swdesc + line
-        self.conf = libconf.loads(swdesc)
-        self.find_files_in_swdesc(self.conf.software)
+        if self.swdescription.suffix == ".json":
+            self.conf = json.loads(swdesc)
+        else:
+            self.conf = libconf.loads(swdesc)
+        self.find_files_in_swdesc(self.conf.get("software", {}))
 
         sw = Artifact("sw-description")
         sw.fullfilename = os.path.join(self.temp.name, sw.filename)
@@ -252,14 +256,16 @@ class SWUGenerator:
         for entry in self.filelist:
             self.process_entry(entry)
 
-        swdesc = libconf.dumps(self.conf)
-
-        # libconf mishandle special character if they are part
-        # of an attribute. This happens to the embedded-script
-        # and the script results to be in just one line.
-        # Reinsert \n and \t that was removed by libconf
-        swdesc = re.sub(r"\\n", "\n", swdesc)
-        swdesc = re.sub(r"\\t", "\t", swdesc)
+        if self.swdescription.suffix == ".json":
+            swdesc = json.dumps(self.conf)
+        else:
+            swdesc = libconf.dumps(self.conf)
+            # libconf mishandle special character if they are part
+            # of an attribute. This happens to the embedded-script
+            # and the script results to be in just one line.
+            # Reinsert \n and \t that was removed by libconf
+            swdesc = re.sub(r"\\n", "\n", swdesc)
+            swdesc = re.sub(r"\\t", "\t", swdesc)
 
         swdesc_filename = os.path.join(self.temp.name, sw.filename)
         self.save_swdescription(swdesc_filename, swdesc)

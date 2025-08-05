@@ -55,23 +55,39 @@ def copy_to_test_dir(filename, test_dir) -> Path:
 
 
 @pytest.fixture()
-def sw_description_template(input_directory):
+def sw_description_template_libconf(input_directory):
     """Copies sw-description template to test directory"""
     filename = "sw-description.in"
     return copy_to_test_dir(filename, input_directory)
 
+@pytest.fixture()
+def sw_description_template_json(input_directory):
+    """Copies sw-description template to test directory"""
+    filename = "sw-description.json"
+    return copy_to_test_dir(filename, input_directory)
 
 @pytest.fixture()
-def encrypted_sw_description_template(input_directory):
+def encrypted_sw_description_template_libconf(input_directory):
     """Copies sw-description template to test directory"""
     filename = "enc-sw-description.in"
     return copy_to_test_dir(filename, input_directory)
 
+@pytest.fixture()
+def encrypted_sw_description_template_json(input_directory):
+    """Copies sw-description template to test directory"""
+    filename = "enc-sw-description.json"
+    return copy_to_test_dir(filename, input_directory)
 
 @pytest.fixture()
-def config_file(input_directory):
+def config_file_libconfig(input_directory):
     """Copies config file to test directory"""
     filename = "config"
+    return copy_to_test_dir(filename, input_directory)
+
+@pytest.fixture()
+def config_file_json(input_directory):
+    """Copies config file to test directory"""
+    filename = "config.json"
     return copy_to_test_dir(filename, input_directory)
 
 
@@ -116,16 +132,16 @@ def validate_swu(output_swu, encrypted=False):
 
 
 def test_basic_command_creates_valid_swu(
-    artifactory, sw_description_template, config_file, output_directory
+    artifactory, sw_description_template_libconf, config_file_libconfig, output_directory
 ):
     output_file = "output.swu"
     command_args = [
         "-s",
-        str(sw_description_template),
+        str(sw_description_template_libconf),
         "-a",
         str(artifactory),
         "-c",
-        str(config_file),
+        str(config_file_libconfig),
         "-o",
         str((output_directory / output_file).resolve()),
         "create",
@@ -134,17 +150,17 @@ def test_basic_command_creates_valid_swu(
     assert validate_swu(output_directory / output_file)
 
 
-def test_command_with_sign_flag_creates_valid_signed_swu(
-    artifactory, sw_description_template, config_file, signing_key, output_directory
+def test_command_with_sign_flag_creates_valid_signed_swu_libconf(
+    artifactory, sw_description_template_libconf, config_file_libconfig, signing_key, output_directory
 ):
     output_file = "signed_output.swu"
     command_args = [
         "-s",
-        str(sw_description_template),
+        str(sw_description_template_libconf),
         "-a",
         str(artifactory),
         "-c",
-        str(config_file),
+        str(config_file_libconfig),
         "-k",
         f"RSA,{signing_key}",
         "-o",
@@ -155,21 +171,21 @@ def test_command_with_sign_flag_creates_valid_signed_swu(
     assert validate_swu(output_directory / output_file)
 
 
-def test_command_with_encryption_flag_creates_encrypted_swu(
+def test_command_with_encryption_flag_creates_encrypted_swu_libconf(
     artifactory,
-    encrypted_sw_description_template,
-    config_file,
+    encrypted_sw_description_template_libconf,
+    config_file_libconfig,
     encryption_key,
     output_directory,
 ):
     output_file = "output.swu.enc"
     command_args = [
         "-s",
-        str(encrypted_sw_description_template),
+        str(encrypted_sw_description_template_libconf),
         "-a",
         str(artifactory),
         "-c",
-        str(config_file),
+        str(config_file_libconfig),
         "-K",
         str(encryption_key),
         "-o",
@@ -180,10 +196,35 @@ def test_command_with_encryption_flag_creates_encrypted_swu(
     assert validate_swu(output_directory / output_file, encrypted=True)
 
 
-def test_command_with_sign_flag_and_encrypt_flag_creates_signed_encrypted_swu(
+def test_command_with_encryption_flag_creates_encrypted_swu_json(
     artifactory,
-    encrypted_sw_description_template,
-    config_file,
+    encrypted_sw_description_template_json,
+    config_file_json,
+    encryption_key,
+    output_directory,
+):
+    output_file = "output.swu.enc"
+    command_args = [
+        "-s",
+        str(encrypted_sw_description_template_json),
+        "-a",
+        str(artifactory),
+        "-c",
+        str(config_file_json),
+        "-K",
+        str(encryption_key),
+        "-o",
+        str((output_directory / output_file).resolve()),
+        "create",
+    ]
+    main.parse_args(command_args)
+    assert validate_swu(output_directory / output_file, encrypted=True)
+
+
+def test_command_with_sign_flag_and_encrypt_flag_creates_signed_encrypted_swu_libconf(
+    artifactory,
+    encrypted_sw_description_template_libconf,
+    config_file_libconfig,
     signing_key,
     encryption_key,
     output_directory,
@@ -191,11 +232,39 @@ def test_command_with_sign_flag_and_encrypt_flag_creates_signed_encrypted_swu(
     output_file = "signed_output.swu.enc"
     command_args = [
         "-s",
-        str(encrypted_sw_description_template),
+        str(encrypted_sw_description_template_libconf),
         "-a",
         str(artifactory),
         "-c",
-        str(config_file),
+        str(config_file_libconfig),
+        "-k",
+        f"RSA,{signing_key}",
+        "-K",
+        str(encryption_key),
+        "-o",
+        str((output_directory / output_file).resolve()),
+        "create",
+    ]
+    main.parse_args(command_args)
+    assert validate_swu(output_directory / output_file, encrypted=True)
+
+
+def test_command_with_sign_flag_and_encrypt_flag_creates_signed_encrypted_swu_json(
+    artifactory,
+    encrypted_sw_description_template_json,
+    config_file_json,
+    signing_key,
+    encryption_key,
+    output_directory,
+):
+    output_file = "signed_output.swu.enc"
+    command_args = [
+        "-s",
+        str(encrypted_sw_description_template_json),
+        "-a",
+        str(artifactory),
+        "-c",
+        str(config_file_json),
         "-k",
         f"RSA,{signing_key}",
         "-K",
